@@ -34,8 +34,8 @@ public class GameMaster : NetworkBehaviour
     public NetworkLinkedList<int> player1_points { get; }
     [Networked]
     public NetworkLinkedList<int> player2_points { get; }
-    [Networked]
-    public int select_button{ get; set; }
+    [Networked,SerializeField]
+    public int elected_chair{ get; set; }
 
     public override void Spawned()
     {
@@ -56,6 +56,8 @@ public class GameMaster : NetworkBehaviour
 
         round = 0;
         turn = 0;
+
+        elected_chair = 0;
 
         player_names = new List<string>();
 
@@ -86,21 +88,40 @@ public class GameMaster : NetworkBehaviour
             //アタックプレイヤーをセット
             var attack_player = players[AttackPlayer_num];
 
-            //アタックプレイヤーの有効化
-            RPCPlayerValid(attack_player, true);
-
-            //ディフェンスプレイヤーの無効化
-            switch (AttackPlayer_num)
+            if (turn == 0)
             {
-                case 0:
-                    RPCPlayerValid(players[1], false);
-                    break;
-                case 1:
-                    RPCPlayerValid(players[0], false);
-                    break;
-            }
+                //アタックプレイヤーの有効化
+                RPCPlayerValid(attack_player, true);
 
-            RPCPlayerSetSerectable(attack_player, true);
+                //ディフェンスプレイヤーの無効化
+                switch (AttackPlayer_num)
+                {
+                    case 0:
+                        RPCPlayerValid(players[1], false);
+                        break;
+                    case 1:
+                        RPCPlayerValid(players[0], false);
+                        break;
+                }
+
+                if (elected_chair == 0)
+                {
+                    RPCPlayerSetSerectable(attack_player, true);
+                    elected_chair = attackplayer_avater.selected_chair;
+                    Debug.Log(elected_chair);
+                }
+                else
+                {
+                    turn = 1;
+                    RPCPlayerSetSerectable(attack_player, false);
+                    RPCPlayerValid(players[1], true);
+                    RPCPlayerValid(players[0], true);
+                }
+            }
+            else
+            {
+                
+            }
         }
     }
 

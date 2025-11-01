@@ -12,6 +12,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
 {
     [SerializeField] GameObject Title;
     [SerializeField] GameObject Window_back;
+    [SerializeField] GameObject select_chair_window;
     [SerializeField] GameObject loading_window;
     [SerializeField] GameObject Error_window;
     [SerializeField] TMP_Text Error_Text;
@@ -20,6 +21,8 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] GameObject Loading_Text;
     [SerializeField] GameObject TryInRomm_Text;
     [SerializeField] GameObject Search_Text;
+    [SerializeField] GameObject Select_Chair_UI;
+    [SerializeField] TMP_Text Select_Chair_Text;
     [SerializeField] TMP_Text battleplay;
     [SerializeField] AudioSource TitleBGM;
     [SerializeField] AudioSource GameBGM;
@@ -58,7 +61,6 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
             {
                 // プレイヤー名を設定
                 networkObject.GetComponent<PlayerAvater>().NickName = PlayerPrefs.GetString("player_name");
-                networkObject.GetComponent<PlayerAvater>().owner = player;
             });
             runner.SetPlayerObject(player, playerobj);
             ingame = true;
@@ -99,6 +101,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
             Cursor.lockState = CursorLockMode.None;
             Error_window.SetActive(true);
             Error_Text.text = "相手が退出したためルームを終了します。";
+            networkRunner.Shutdown();
         }
     }
     void INetworkRunnerCallbacks.OnInput(NetworkRunner runner, NetworkInput input) { }
@@ -180,6 +183,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
         ingame = false;
         Error_window.SetActive(true);
         Error_Text.text = "エラーが発生しました。\n 理由:" + reason;
+        networkRunner.Shutdown();
     }
 
     //ログに了承し、セッションを終了(初期化)
@@ -216,6 +220,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
 
         //Nullなら返す
         if (local_player.IsUnityNull()) return;
+
         var local_avater = local_player.GetComponent<PlayerAvater>();
 
         if (local_avater.IsUnityNull()) return;
@@ -233,6 +238,47 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
             Player_Screen.SetActive(false);
             Wait_Screen.SetActive(true);
         }
+    }
+
+    public void SelectChairUI(int select_chair)
+    {
+
+        if (select_chair != 0)
+        {
+            Select_Chair_UI.SetActive(true);
+            Select_Chair_Text.text = $"{select_chair}を選択";
+        }
+        else
+        {
+            Select_Chair_UI.SetActive(false);
+        }
+
+    }
+
+    public void SelectChairWindow()
+    {
+        select_chair_window.SetActive(true);
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+
+        var local_player = networkRunner.GetPlayerObject(networkRunner.LocalPlayer);
+        var local_avater = local_player.GetComponent<PlayerAvater>();
+
+        local_avater.LocalcharacterController.enabled = false;
+
+    }
+
+    public void OnSelectChairWindow()
+    {
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+
+        var local_player = networkRunner.GetPlayerObject(networkRunner.LocalPlayer);
+        var local_avater = local_player.GetComponent<PlayerAvater>();
+        local_avater.LocalcharacterController.enabled = true;
+
+        local_avater.RPCSelectChair();
+
     }
 
     void Update()
