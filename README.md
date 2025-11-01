@@ -1,2 +1,3 @@
-# Electric Chair Game
-Danbal Mikan Boxの初プロジェクト
+# Electric Chair Game 3D
+Danbal Mikan Boxの初プロジェクト。もとは水ダウの企画でやっていたものを3Dゲーム化するというコンセプトです。
+なお、Githubにあげられるファイル容量の兼ね合いでフォントだけデータを削除しています。DotGothicを使用しているのでそちらは各自お願いします。
