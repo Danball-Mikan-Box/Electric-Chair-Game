@@ -15,25 +15,40 @@ public class GameMaster : NetworkBehaviour
     //ゲームランチャーをセット
     private GameLauncher gameLauncher;
 
+    //プレイヤーリスト
     private PlayerRef[] players;
 
+    //プレイヤーネームのリスト
     private List<string> player_names;
 
+    //ゲーム中か否か
     [Networked]
     public NetworkBool IsGaming{ get; set; }
 
     [Networked]
     public NetworkString<_128> Battle_Player_Text { get; set; }
+
+    //アタックプレイヤーの添字
     [Networked]
     public int AttackPlayer_num { get; set; }
-    [Networked,SerializeField]
-    public int round { get; set; }
+
+    //現在のラウンド
     [Networked, SerializeField]
-    public int turn{ get; set; }
+    public int round { get; set; }
+
+    //現在のラウンド内の手番
+    [Networked, SerializeField]
+    public int turn { get; set; }
+
+    //プレイヤーポイントリスト
     [Networked]
     public NetworkLinkedList<int> player1_points { get; }
+
+    //プレイヤーポイントリスト2
     [Networked]
     public NetworkLinkedList<int> player2_points { get; }
+
+    //電気椅子の番号
     [Networked,SerializeField]
     public int elected_chair{ get; set; }
 
@@ -104,18 +119,45 @@ public class GameMaster : NetworkBehaviour
                         break;
                 }
 
+                //電気椅子が仕掛けられているか仕掛けられていないか。
                 if (elected_chair == 0)
                 {
                     RPCPlayerSetSerectable(attack_player, true);
                     elected_chair = attackplayer_avater.selected_chair;
-                    Debug.Log(elected_chair);
+                    attackplayer_avater.selected_chair = 0;
                 }
                 else
                 {
+                    if(turn == 0)
+                    {
+                        round += 1;
+                    }
                     turn = 1;
                     RPCPlayerSetSerectable(attack_player, false);
                     RPCPlayerValid(players[1], true);
                     RPCPlayerValid(players[0], true);
+
+                    //ディフェンスが座れるように
+                    switch (AttackPlayer_num)
+                    {
+                        case 0:
+                            RPCPlayerSitSerectable(players[1], true);
+                            break;
+                        case 1:
+                            RPCPlayerSitSerectable(players[0], true);
+                            break;
+                    }
+
+                    //アタックがファイナルサンダーをできるように
+                    switch (AttackPlayer_num)
+                    {
+                    case 0:
+                        RPCPlayerCanFinalThunder(players[0], true);
+                        break;
+                    case 1:
+                        RPCPlayerCanFinalThunder(players[1], true);
+                        break;
+                    }
                 }
             }
             else
@@ -163,9 +205,9 @@ public class GameMaster : NetworkBehaviour
 
     //プレイヤーに得点をセット
     [Rpc(RpcSources.All, RpcTargets.All)]
-    public void RPCPlayerPointsSet(PlayerRef player,int round,int point)
+    public void RPCPlayerPointsSet(PlayerRef player, int round, int point)
     {
-        
+
     }
 
 

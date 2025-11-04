@@ -4114,14 +4114,14 @@ GameObject:
   m_Component:
   - component: {fileID: 1064816786152766026}
   - component: {fileID: 8983976514544302272}
-  - component: {fileID: 5389520916243505102}
   - component: {fileID: 2243504198760995305}
   - component: {fileID: 2948291224063327949}
   - component: {fileID: -3401172090615863520}
   - component: {fileID: 2838060454837893404}
   - component: {fileID: -7418531425203280119}
-  - component: {fileID: -3133546922383901760}
   - component: {fileID: 8020352204995838900}
+  - component: {fileID: 8218529138614484985}
+  - component: {fileID: 2479453017334205562}
   m_Layer: 8
   m_Name: PlayerAvater
   m_TagString: Player
@@ -4170,31 +4170,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!143 &5389520916243505102
-CharacterController:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2894892900125390632}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Height: 1.9
-  m_Radius: 0.3
-  m_SlopeLimit: 45
-  m_StepOffset: 0.25
-  m_SkinWidth: 0.02
-  m_MinMoveDistance: 0
-  m_Center: {x: 0, y: 0.93, z: 0}
 --- !u!114 &2243504198760995305
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4214,7 +4189,7 @@ MonoBehaviour:
   NetworkedBehaviours:
   - {fileID: 2948291224063327949}
   - {fileID: 2838060454837893404}
-  - {fileID: -3133546922383901760}
+  - {fileID: 2479453017334205562}
   ForceRemoteRenderTimeframe: 0
 --- !u!114 &2948291224063327949
 MonoBehaviour:
@@ -4241,6 +4216,13 @@ MonoBehaviour:
   _canFinalThunder:
     _value: 0
   _select_chair: 0
+  _sitting_chair: 0
+  _selected_chair: 0
+  _isSitting:
+    _value: 0
+  sitpoints: []
+  standpoints: []
+  LocalcharacterController: 0
 --- !u!114 &-3401172090615863520
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4271,7 +4253,7 @@ MonoBehaviour:
   Animator: {fileID: 8983976514544302272}
   ApplyTiming: 2
   SyncSettings: 79
-  StateHashes: 0000000084ca1cc0f9c6230b1c6a54339e2518b671a7e1076b36dbedb1afdc305a6c54cd
+  StateHashes: 0000000084ca1cc0f9c6230b1c6a54339e2518b671a7e1076b36dbedb1afdc305a6c54cdec080bd4cfb808723e34c65824a5fcb2
   TriggerHashes: 00000000
   TotalWords: 3
 --- !u!114 &-7418531425203280119
@@ -4298,25 +4280,6 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 274649b0e221539409070ebf6c18918b, type: 3}
   - {fileID: 8300000, guid: a3194b8bbc96ef84fab1f98f4b7dae3e, type: 3}
   landingAudioClip: {fileID: 8300000, guid: ff697d3070687ce4583faa0561a145a2, type: 3}
---- !u!114 &-3133546922383901760
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2894892900125390632}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 378411a89480da345945c2f888327a2d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Fusion.Unity::Fusion.NetworkCharacterController
-  _stateAuthorityChangeErrorCorrectionDelta: 0
-  gravity: -20
-  jumpImpulse: 8
-  acceleration: 10
-  braking: 10
-  maxSpeed: 2
-  rotationSpeed: 15
 --- !u!114 &8020352204995838900
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4423,6 +4386,50 @@ MonoBehaviour:
   m_DefaultActionMap: 
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
+--- !u!143 &8218529138614484985
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2894892900125390632}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 2
+  m_Radius: 0.2
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.08
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &2479453017334205562
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2894892900125390632}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 378411a89480da345945c2f888327a2d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fusion.Unity::Fusion.NetworkCharacterController
+  _stateAuthorityChangeErrorCorrectionDelta: 0
+  gravity: -20
+  jumpImpulse: 8
+  acceleration: 10
+  braking: 10
+  maxSpeed: 2
+  rotationSpeed: 15
 --- !u!1 &2962984106564831428
 GameObject:
   m_ObjectHideFlags: 0

@@ -3,7 +3,9 @@ using System.Text.RegularExpressions;
 using Fusion;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Assertions.Must;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 
 public class PlayerAvater : NetworkBehaviour
 {
@@ -27,17 +29,40 @@ public class PlayerAvater : NetworkBehaviour
     public int select_chair { get; set; }
 
     [Networked, SerializeField]
+    public int sitting_chair{ get; set; }
+
+    //固定した選択椅子番号
+    [Networked, SerializeField]
     public int selected_chair { get; set; }
 
+    [Networked, SerializeField]
+    public NetworkBool isSitting { get; set; }
+
+    public string player_tip;
+
+    public Transform[] sitpoints;
+
+    public Transform[] standpoints;
+
+    //プレイヤー
     private PlayerInput playerInput;
 
     private InputAction attack;
 
+    private InputAction sprint;
+    //ゲームランチャー
     private GameLauncher gameLauncher;
 
+    //ゲームマスター
+    private GameMaster master;
+    //レンダラーのArray
     private Renderer[] renderers;
-    public CharacterController LocalcharacterController;
+    //キャラクターコントローラーの有効
+    public bool LocalcharacterController;
+
+    //キャラクターコントローラー
     private NetworkCharacterController characterController;
+    //ネットワークアニメーター
     private NetworkMecanimAnimator networkAnimator;
     public override void Spawned()
     {
@@ -64,26 +89,38 @@ public class PlayerAvater : NetworkBehaviour
         //レンダーの取得
         renderers = GetComponentsInChildren<Renderer>(true);
         //キャラクターコントローラーの取得(使わないなら削除)
-        LocalcharacterController = GetComponent<CharacterController>();
+        LocalcharacterController = true;
 
         //ゲームランチャーの取得
         gameLauncher = FindFirstObjectByType<GameLauncher>();
 
+        master = FindFirstObjectByType<GameMaster>();
+
         playerInput = GetComponent<PlayerInput>();
 
         attack = playerInput.actions["Attack"];
+        sprint = playerInput.actions["Sprint"];
 
         //初期値のセット
         isValid = true;
         isSetSerectable = false;
         isSitSerectable = false;
+        isSitting = false;
         select_chair = 0;
         selected_chair = 0;
+        player_tip = "";
     }
 
     //ネットワーク同期処理
     public override void FixedUpdateNetwork()
     {
+        // アニメーション
+        var animator = networkAnimator.Animator;
+
+        if (master.IsUnityNull())
+        {
+            master = FindFirstObjectByType<GameMaster>();
+        }
         //カメラのアングル調整
         var cameraRotation = Quaternion.Euler(0f, Camera.main.transform.rotation.eulerAngles.y, 0f);
         //方向入力
@@ -92,13 +129,17 @@ public class PlayerAvater : NetworkBehaviour
         //有効な場合
         if (isValid)
         {
-            //キャラ移動
-            characterController.Move(cameraRotation * inputDirection);
+            if (LocalcharacterController)
+            {
+                //キャラ移動
+                characterController.Move(cameraRotation * inputDirection);
+            }
 
             Ray ray = new Ray(transform.position + new Vector3(0f, 0.2f, 0f), transform.forward);
 
             if (isSetSerectable)
             {
+                player_tip = "電気を仕掛けよう";
                 //前方オブジェクトの検出
                 if (Physics.Raycast(ray, out var hit, 0.5f))
                 {
@@ -133,23 +174,80 @@ public class PlayerAvater : NetworkBehaviour
             }
             else if (isSitSerectable)
             {
-                return;
+                player_tip = "椅子を選ぼう";
+                if (isSitting && selected_chair != 0)
+                {
+                    characterController.Teleport(sitpoints[selected_chair - 1].position);
+                    characterController.transform.rotation = sitpoints[selected_chair - 1].rotation;
+                }
+
+                //前方オブジェクトの検出
+                if (Physics.Raycast(ray, out var hit, 0.5f))
+                {
+
+                    //セレクト対象があるなら
+                    if (!hit.IsUnityNull())
+                    {
+
+                        //椅子の数字を代入
+                        try
+                        {
+                            select_chair = int.Parse(Regex.Replace(hit.transform.name, @"[^0-9]", ""));
+                        }
+                        catch (FormatException)
+                        {
+                            select_chair = 0;
+                        }
+
+                        gameLauncher.SelectChairUI(select_chair);
+
+                        if (attack.IsPressed() && select_chair != 0 && selected_chair == 0)
+                        {
+                            selected_chair = select_chair;
+                            isSitting = true;
+                            animator.SetBool("Sitting", true);
+                        }
+                    }
+
+                }
+                else
+                {
+                    select_chair = 0;
+                    gameLauncher.SelectChairUI(select_chair);
+                }
+
+                if (sprint.IsPressed() && selected_chair != 0)
+                {
+                    characterController.Teleport(standpoints[selected_chair - 1].position);
+                    characterController.Velocity = Vector3.zero;
+                    isSitting = false;
+                    animator.SetBool("Sitting", false);
+                    selected_chair = 0;
+                }
             }
             else if (canFinalThunder)
             {
-                return;
+                player_tip = "相手を誘導しよう";
+                gameLauncher.Select_Chair_UI.SetActive(false);
+                //前方オブジェクトの検出
+                if (Physics.Raycast(ray, out var hit, 0.5f))
+                {
+
+                    //セレクト対象があるなら
+                    if (!hit.IsUnityNull())
+                    {
+                        return;
+                    }
+                }
+            }
+            else
+            {
+                select_chair = 0;
             }
         }
-        // アニメーション
-        var animator = networkAnimator.Animator;
-        var grounded = characterController.Grounded;
-        var vy = characterController.Velocity.y;
         if (isValid)
         {
             animator.SetFloat("Speed", characterController.Velocity.magnitude);
-            animator.SetBool("Jump", !grounded && vy > 4f);
-            animator.SetBool("Grounded", grounded);
-            animator.SetBool("FreeFall", !grounded && vy < -4f);
             animator.SetFloat("MotionSpeed", 1f);
         }
 
@@ -170,14 +268,14 @@ public class PlayerAvater : NetworkBehaviour
                 if (rend != null)
                     rend.enabled = newValue;
         }
-        //キャラクターコントローラの変更
-        LocalcharacterController.enabled = isValid;
     }
     [Rpc(RpcSources.All, RpcTargets.All)]
     public void RPCSelectChair()
     {
-        gameLauncher.SelectChairUI(0);
         selected_chair = select_chair;
+        select_chair = 0;
+        gameLauncher.SelectChairUI(select_chair);
+        characterController.Teleport(new Vector3(2, 0.5f, 2));
     }
     //自分の手番が終わったときにGameMasterに送信
     [Rpc(RpcSources.All, RpcTargets.All)]

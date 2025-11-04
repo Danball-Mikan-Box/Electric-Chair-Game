@@ -7,6 +7,7 @@ using Fusion.Sockets;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
 {
@@ -14,6 +15,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] GameObject Window_back;
     [SerializeField] GameObject select_chair_window;
     [SerializeField] GameObject loading_window;
+    [SerializeField] GameObject left_window;
     [SerializeField] GameObject Error_window;
     [SerializeField] TMP_Text Error_Text;
     [SerializeField] TMP_Text Room_name;
@@ -21,13 +23,15 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] GameObject Loading_Text;
     [SerializeField] GameObject TryInRomm_Text;
     [SerializeField] GameObject Search_Text;
-    [SerializeField] GameObject Select_Chair_UI;
+    [SerializeField] public GameObject Select_Chair_UI;
     [SerializeField] TMP_Text Select_Chair_Text;
     [SerializeField] TMP_Text battleplay;
     [SerializeField] AudioSource TitleBGM;
     [SerializeField] AudioSource GameBGM;
     [SerializeField] AudioSource SE;
     [SerializeField] GameObject Lightning_Movie;
+    [SerializeField] Transform[] sitpoints;
+    [SerializeField] Transform[] standpoints;
     [SerializeField]
     private NetworkPrefabRef GameMasterPrefab;
     public NetworkObject master;
@@ -55,12 +59,14 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
         // セッションへ参加したプレイヤーが自分自身かどうかを判定する
         if (player == runner.LocalPlayer)
         {
-            var spawnPosition = new Vector3(0, 1f, 0);
+            var spawnPosition = new Vector3(2, 0.5f, -2);
             // 自分自身のアバターをスポーンする
             var playerobj = runner.Spawn(playerAvatarPrefab, spawnPosition, Quaternion.identity, onBeforeSpawned: (_, networkObject) =>
             {
                 // プレイヤー名を設定
                 networkObject.GetComponent<PlayerAvater>().NickName = PlayerPrefs.GetString("player_name");
+                networkObject.GetComponent<PlayerAvater>().sitpoints = sitpoints;
+                networkObject.GetComponent<PlayerAvater>().standpoints = standpoints;
             });
             runner.SetPlayerObject(player, playerobj);
             ingame = true;
@@ -196,6 +202,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
         battleplay.text = "";
         SE.Play();
         Error_window.SetActive(false);
+        left_window.SetActive(false);
         loading_window.SetActive(false);
         TryInRomm_Text.SetActive(false);
         Search_Text.SetActive(false);
@@ -230,7 +237,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
             HUD.SetActive(true);
             Player_Screen.SetActive(true);
             Wait_Screen.SetActive(false);
-            Play_Tip.text = "電気を仕掛けよう";
+            Play_Tip.text = local_avater.player_tip;
         }
         else
         {
@@ -250,6 +257,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
         }
         else
         {
+            Select_Chair_Text.text = $"";
             Select_Chair_UI.SetActive(false);
         }
 
@@ -264,7 +272,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
         var local_player = networkRunner.GetPlayerObject(networkRunner.LocalPlayer);
         var local_avater = local_player.GetComponent<PlayerAvater>();
 
-        local_avater.LocalcharacterController.enabled = false;
+        local_avater.LocalcharacterController = false;
 
     }
 
@@ -275,10 +283,17 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
 
         var local_player = networkRunner.GetPlayerObject(networkRunner.LocalPlayer);
         var local_avater = local_player.GetComponent<PlayerAvater>();
-        local_avater.LocalcharacterController.enabled = true;
+        local_avater.LocalcharacterController = true;
 
         local_avater.RPCSelectChair();
 
+    }
+
+    public void ForcePlayerControllerON()
+    {
+        var local_player = networkRunner.GetPlayerObject(networkRunner.LocalPlayer);
+        var local_avater = local_player.GetComponent<PlayerAvater>();
+        local_avater.LocalcharacterController = true;
     }
 
     void Update()
