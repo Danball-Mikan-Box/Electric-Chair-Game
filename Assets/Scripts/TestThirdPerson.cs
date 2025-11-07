@@ -36,5 +36,10 @@ public class TestThirdPerson : MonoBehaviour
                 transform.rotation = sitpoint.rotation;
             }
         }
+
+        if (Input.GetKeyDown(KeyCode.LeftAlt))
+        {
+            _animator.SetTrigger("Final");
+        }
     }
 }

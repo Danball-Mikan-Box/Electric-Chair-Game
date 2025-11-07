@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Assertions.Must;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
+using UnityEngine.Video;
 
 public class PlayerAvater : NetworkBehaviour
 {
@@ -38,7 +39,12 @@ public class PlayerAvater : NetworkBehaviour
     [Networked, SerializeField]
     public NetworkBool isSitting { get; set; }
 
+    [Networked,SerializeField]
+    public bool defenceIsSitting{ get; set; }
+
     public string player_tip;
+
+    public VideoPlayer cutInPlayer;
 
     public Transform[] sitpoints;
 
@@ -73,6 +79,8 @@ public class PlayerAvater : NetworkBehaviour
 
         //カメラ描画の取得
         var view = GetComponent<PlayerAvatarView>();
+
+        cutInPlayer = GameObject.FindGameObjectWithTag("CutInPlayer").GetComponent<VideoPlayer>();
 
         //部屋のコライダー
         var confiner = GameObject.Find("Room").GetComponent<Collider>();
@@ -181,6 +189,15 @@ public class PlayerAvater : NetworkBehaviour
                     characterController.transform.rotation = sitpoints[selected_chair - 1].rotation;
                 }
 
+                if (master.isFinalThunderSelect)
+                {
+
+                }
+                else
+                {
+                    
+                }
+
                 //前方オブジェクトの検出
                 if (Physics.Raycast(ray, out var hit, 0.5f))
                 {
@@ -216,7 +233,7 @@ public class PlayerAvater : NetworkBehaviour
                     gameLauncher.SelectChairUI(select_chair);
                 }
 
-                if (sprint.IsPressed() && selected_chair != 0)
+                if (sprint.IsPressed() && selected_chair != 0 && master.isFinalThunderSelect == false)
                 {
                     characterController.Teleport(standpoints[selected_chair - 1].position);
                     characterController.Velocity = Vector3.zero;
@@ -236,8 +253,20 @@ public class PlayerAvater : NetworkBehaviour
                     //セレクト対象があるなら
                     if (!hit.IsUnityNull())
                     {
-                        return;
+                        if(hit.transform.name == "ボタン" && defenceIsSitting == true)
+                        {
+                            gameLauncher.SelectChairUI(13);
+
+                            if (attack.IsPressed())
+                            {
+                                master.RPCisFinalThunderSelect(true);
+                            }
+                        }
                     }
+                }
+                else
+                {
+                    gameLauncher.SelectChairUI(0);
                 }
             }
             else
@@ -276,6 +305,20 @@ public class PlayerAvater : NetworkBehaviour
         select_chair = 0;
         gameLauncher.SelectChairUI(select_chair);
         characterController.Teleport(new Vector3(2, 0.5f, 2));
+    }
+
+    [Rpc(RpcSources.All, RpcTargets.All)]
+    public void RPCDefenceSitting(bool sitting)
+    {
+        defenceIsSitting = sitting;
+    }
+
+    [Rpc(RpcSources.All, RpcTargets.All)]
+    public void RPCFinalThunderUI()
+    {
+        cutInPlayer.Play();
+
+        gameLauncher.PlayScreenValid(false);
     }
     //自分の手番が終わったときにGameMasterに送信
     [Rpc(RpcSources.All, RpcTargets.All)]

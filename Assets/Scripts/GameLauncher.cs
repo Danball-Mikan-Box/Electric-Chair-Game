@@ -8,6 +8,7 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Video;
 
 public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
 {
@@ -26,6 +27,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] public GameObject Select_Chair_UI;
     [SerializeField] TMP_Text Select_Chair_Text;
     [SerializeField] TMP_Text battleplay;
+    [SerializeField] VideoPlayer cutInPlayer;
     [SerializeField] AudioSource TitleBGM;
     [SerializeField] AudioSource GameBGM;
     [SerializeField] AudioSource SE;
@@ -52,6 +54,9 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
 
     //ゲーム中か否か
     public bool ingame = false;
+
+    //プレイスクリーンの有効
+    private bool ScreenValid = true;
 
     void INetworkRunnerCallbacks.OnObjectEnterAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
     void INetworkRunnerCallbacks.OnPlayerJoined(NetworkRunner runner, PlayerRef player)
@@ -235,7 +240,10 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
         if (local_avater.isValid)
         {
             HUD.SetActive(true);
-            Player_Screen.SetActive(true);
+            if (ScreenValid)
+            {
+                Player_Screen.SetActive(true);
+            }
             Wait_Screen.SetActive(false);
             Play_Tip.text = local_avater.player_tip;
         }
@@ -249,11 +257,16 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
 
     public void SelectChairUI(int select_chair)
     {
-
-        if (select_chair != 0)
+        //0番は無選択 13番はファイナルサンダーボタン
+        if (select_chair != 0 && select_chair != 13)
         {
             Select_Chair_UI.SetActive(true);
             Select_Chair_Text.text = $"{select_chair}を選択";
+        }
+        else if (select_chair == 13)
+        {
+            Select_Chair_UI.SetActive(true);
+            Select_Chair_Text.text = $"ファイナルサンダー";
         }
         else
         {
@@ -296,12 +309,23 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
         local_avater.LocalcharacterController = true;
     }
 
+    public void PlayScreenValid(bool select)
+    {
+        ScreenValid = select;
+        Player_Screen.SetActive(select);
+    }
+
     void Update()
     {
         //ゲーム中か判定し、HUDを有効
         if (ingame)
         {
             InElectSetHUD();
+        }
+
+        if (!cutInPlayer.isPlaying)
+        {
+            ScreenValid = true;
         }
     }
 

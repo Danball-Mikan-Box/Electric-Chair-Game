@@ -49,8 +49,12 @@ public class GameMaster : NetworkBehaviour
     public NetworkLinkedList<int> player2_points { get; }
 
     //電気椅子の番号
-    [Networked,SerializeField]
-    public int elected_chair{ get; set; }
+    [Networked, SerializeField]
+    public int elected_chair { get; set; }
+
+    //ファイナルサンダーGUIをオンにする信号
+    [Networked, OnChangedRender(nameof(RPCChangeFinalThunderSelect))]
+    public NetworkBool isFinalThunderSelect{ get; set; }
 
     public override void Spawned()
     {
@@ -102,6 +106,20 @@ public class GameMaster : NetworkBehaviour
             //Round開始(電気仕掛け)
             //アタックプレイヤーをセット
             var attack_player = players[AttackPlayer_num];
+            int Defence_player_num = 0;
+
+            //ディフェンスプレイヤーナンバー
+            switch (AttackPlayer_num)
+            {
+                case 0:
+                    Defence_player_num = 1;
+                    break;
+                case 1:
+                    Defence_player_num = 0;
+                    break;
+            }
+
+            var defence_player = players[Defence_player_num];
 
             if (turn == 0)
             {
@@ -109,15 +127,7 @@ public class GameMaster : NetworkBehaviour
                 RPCPlayerValid(attack_player, true);
 
                 //ディフェンスプレイヤーの無効化
-                switch (AttackPlayer_num)
-                {
-                    case 0:
-                        RPCPlayerValid(players[1], false);
-                        break;
-                    case 1:
-                        RPCPlayerValid(players[0], false);
-                        break;
-                }
+                RPCPlayerValid(defence_player, false);
 
                 //電気椅子が仕掛けられているか仕掛けられていないか。
                 if (elected_chair == 0)
@@ -138,31 +148,18 @@ public class GameMaster : NetworkBehaviour
                     RPCPlayerValid(players[0], true);
 
                     //ディフェンスが座れるように
-                    switch (AttackPlayer_num)
-                    {
-                        case 0:
-                            RPCPlayerSitSerectable(players[1], true);
-                            break;
-                        case 1:
-                            RPCPlayerSitSerectable(players[0], true);
-                            break;
-                    }
+                    RPCPlayerSitSerectable(defence_player, true);
 
                     //アタックがファイナルサンダーをできるように
-                    switch (AttackPlayer_num)
-                    {
-                    case 0:
-                        RPCPlayerCanFinalThunder(players[0], true);
-                        break;
-                    case 1:
-                        RPCPlayerCanFinalThunder(players[1], true);
-                        break;
-                    }
+                    RPCPlayerCanFinalThunder(attack_player, true);
                 }
             }
             else
             {
-                
+                var defenceobj = runner.GetPlayerObject(defence_player);
+                var defence_avater = defenceobj.GetComponent<PlayerAvater>();
+
+                attackplayer_avater.RPCDefenceSitting(defence_avater.isSitting);
             }
         }
     }
@@ -201,6 +198,28 @@ public class GameMaster : NetworkBehaviour
         var playerobj = runner.GetPlayerObject(player);
         var playeravater = playerobj.GetComponent<PlayerAvater>();
         playeravater.canFinalThunder = canfinalthunder;
+    }
+
+    [Rpc(RpcSources.All, RpcTargets.All)]
+    public void RPCisFinalThunderSelect(NetworkBool select)
+    {
+        isFinalThunderSelect = select;
+    }
+
+    [Rpc(RpcSources.All, RpcTargets.All)]
+    public void RPCChangeFinalThunderSelect()
+    {
+        if (isFinalThunderSelect)
+        {
+            var player0 = runner.GetPlayerObject(players[0]);
+            var player1 = runner.GetPlayerObject(players[1]);
+
+            var avater0 = player0.GetComponent<PlayerAvater>();
+            var avater1 = player1.GetComponent<PlayerAvater>();
+
+            avater0.RPCFinalThunderUI();
+            avater1.RPCFinalThunderUI();
+        }
     }
 
     //プレイヤーに得点をセット
