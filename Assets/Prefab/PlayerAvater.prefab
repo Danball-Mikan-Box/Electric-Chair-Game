@@ -4220,8 +4220,12 @@ MonoBehaviour:
   _selected_chair: 0
   _isSitting:
     _value: 0
+  _defenceIsSitting: 0
+  player_tip: 
+  cutInPlayer: {fileID: 0}
   sitpoints: []
   standpoints: []
+  thunder_effect: {fileID: 7834434380170384362, guid: 0ec6c605483b4304bb2fb78ab7591791, type: 3}
   LocalcharacterController: 0
 --- !u!114 &-3401172090615863520
 MonoBehaviour:

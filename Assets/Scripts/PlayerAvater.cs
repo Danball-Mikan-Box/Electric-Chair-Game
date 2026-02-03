@@ -61,6 +61,10 @@ public class PlayerAvater : NetworkBehaviour
 
     //ゲームマスター
     private GameMaster master;
+
+    //サンダーエフェクト
+    [SerializeField]
+    private GameObject thunder_effect;
     //レンダラーのArray
     private Renderer[] renderers;
     //キャラクターコントローラーの有効
@@ -191,11 +195,7 @@ public class PlayerAvater : NetworkBehaviour
 
                 if (master.isFinalThunderSelect)
                 {
-
-                }
-                else
-                {
-                    
+                    gameLauncher.FinalWindowOn();
                 }
 
                 //前方オブジェクトの検出
@@ -257,7 +257,7 @@ public class PlayerAvater : NetworkBehaviour
                         {
                             gameLauncher.SelectChairUI(13);
 
-                            if (attack.IsPressed())
+                            if (attack.IsPressed() && master.isFinalThunderSelect == false)
                             {
                                 master.RPCisFinalThunderSelect(true);
                             }
@@ -318,7 +318,14 @@ public class PlayerAvater : NetworkBehaviour
     {
         cutInPlayer.Play();
 
+        gameLauncher.Syakinn.Play();
+
         gameLauncher.PlayScreenValid(false);
+    }
+
+    public void thunder_effect_view(Vector3 pos)
+    {
+        var thunder_effect_obj = Instantiate(thunder_effect, pos, Quaternion.identity);
     }
     //自分の手番が終わったときにGameMasterに送信
     [Rpc(RpcSources.All, RpcTargets.All)]
@@ -326,4 +333,6 @@ public class PlayerAvater : NetworkBehaviour
     {
         return;
     }
+
+    // If you want to hava a happy ending, I`d like to hava a sad ending.
 }

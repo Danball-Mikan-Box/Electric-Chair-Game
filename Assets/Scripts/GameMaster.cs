@@ -12,9 +12,6 @@ public class GameMaster : NetworkBehaviour
     //ネットワークランナー変数
     private NetworkRunner runner;
 
-    //ゲームランチャーをセット
-    private GameLauncher gameLauncher;
-
     //プレイヤーリスト
     private PlayerRef[] players;
 
@@ -54,13 +51,25 @@ public class GameMaster : NetworkBehaviour
 
     //ファイナルサンダーGUIをオンにする信号
     [Networked, OnChangedRender(nameof(RPCChangeFinalThunderSelect))]
-    public NetworkBool isFinalThunderSelect{ get; set; }
+    public NetworkBool isFinalThunderSelect { get; set; }
+
+    //サンダー待機中
+    [Networked]
+    public NetworkBool Isthunder { get; set; }
+
+    [Networked]
+    public NetworkBool chair_match { get; set; }
+
+    [SerializeField]
+    public GameObject electric_effect { get; set; }
+
+    private PlayerAvater attack_avater;
+    private PlayerAvater defence_avater;
 
     public override void Spawned()
     {
         //ネットワークランナーセット
         runner = FindFirstObjectByType<NetworkRunner>(); ;
-        gameLauncher = FindFirstObjectByType<GameLauncher>();
 
         //プレイヤーRefのArray
         players = runner.ActivePlayers.ToArray();
@@ -72,6 +81,7 @@ public class GameMaster : NetworkBehaviour
         }
 
         IsGaming = true;
+        Isthunder = false;
 
         round = 0;
         turn = 0;
@@ -79,6 +89,8 @@ public class GameMaster : NetworkBehaviour
         elected_chair = 0;
 
         player_names = new List<string>();
+
+        chair_match = false;
 
     }
 
@@ -100,8 +112,8 @@ public class GameMaster : NetworkBehaviour
             //オブジェクトが読み取れない場合は戻る
             if(runner.GetPlayerObject(players[AttackPlayer_num]).IsUnityNull() || runner.GetPlayerObject(players[AttackPlayer_num]).GetComponent<PlayerAvater>().IsUnityNull()) return;
             //temp
-            var attackplayer_avater = runner.GetPlayerObject(players[AttackPlayer_num]).GetComponent<PlayerAvater>();
-            Battle_Player_Text = $"{player_names[0]}\nvs\n{player_names[1]}\n先攻:{attackplayer_avater.NickName}";
+            attack_avater = runner.GetPlayerObject(players[AttackPlayer_num]).GetComponent<PlayerAvater>();
+            Battle_Player_Text = $"{player_names[0]}\nvs\n{player_names[1]}\n先攻:{attack_avater.NickName}";
 
             //Round開始(電気仕掛け)
             //アタックプレイヤーをセット
@@ -118,7 +130,7 @@ public class GameMaster : NetworkBehaviour
                     Defence_player_num = 0;
                     break;
             }
-
+            defence_avater = runner.GetPlayerObject(players[Defence_player_num]).GetComponent<PlayerAvater>();
             var defence_player = players[Defence_player_num];
 
             if (turn == 0)
@@ -133,8 +145,8 @@ public class GameMaster : NetworkBehaviour
                 if (elected_chair == 0)
                 {
                     RPCPlayerSetSerectable(attack_player, true);
-                    elected_chair = attackplayer_avater.selected_chair;
-                    attackplayer_avater.selected_chair = 0;
+                    elected_chair = attack_avater.selected_chair;
+                    attack_avater.selected_chair = 0;
                 }
                 else
                 {
@@ -159,7 +171,9 @@ public class GameMaster : NetworkBehaviour
                 var defenceobj = runner.GetPlayerObject(defence_player);
                 var defence_avater = defenceobj.GetComponent<PlayerAvater>();
 
-                attackplayer_avater.RPCDefenceSitting(defence_avater.isSitting);
+                attack_avater.RPCDefenceSitting(defence_avater.isSitting);
+
+                chair_match = elected_chair == defence_avater.selected_chair;
             }
         }
     }
@@ -220,6 +234,22 @@ public class GameMaster : NetworkBehaviour
             avater0.RPCFinalThunderUI();
             avater1.RPCFinalThunderUI();
         }
+    }
+
+    //サンダー決定
+    [Rpc(RpcSources.All, RpcTargets.All)]
+    public void RPCthunder()
+    {
+        Isthunder = true;
+    }
+
+    [Rpc(RpcSources.All, RpcTargets.All)]
+    public void RPCthunderView()
+    {
+        var position = defence_avater.transform.position;
+
+        attack_avater.thunder_effect_view(position);
+        defence_avater.thunder_effect_view(position);
     }
 
     //プレイヤーに得点をセット

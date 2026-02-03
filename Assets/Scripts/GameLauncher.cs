@@ -1,4 +1,4 @@
-using System;
+    using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,6 @@ using Fusion.Sockets;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.Video;
 
 public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
@@ -15,6 +14,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] GameObject Title;
     [SerializeField] GameObject Window_back;
     [SerializeField] GameObject select_chair_window;
+    [SerializeField] GameObject final_window;
     [SerializeField] GameObject loading_window;
     [SerializeField] GameObject left_window;
     [SerializeField] GameObject Error_window;
@@ -30,13 +30,17 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] VideoPlayer cutInPlayer;
     [SerializeField] AudioSource TitleBGM;
     [SerializeField] AudioSource GameBGM;
+    [SerializeField] AudioSource DokiDoki;
     [SerializeField] AudioSource SE;
+    [SerializeField] public AudioSource Syakinn;
     [SerializeField] GameObject Lightning_Movie;
+    [SerializeField] GameObject[] chairs;
     [SerializeField] Transform[] sitpoints;
     [SerializeField] Transform[] standpoints;
     [SerializeField]
     private NetworkPrefabRef GameMasterPrefab;
     public NetworkObject master;
+    private GameMaster gameMaster;
     [SerializeField]
     private NetworkRunner networkRunnerPrefab;
     private NetworkRunner networkRunner;
@@ -96,6 +100,8 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
             {
                 master = runner.Spawn(GameMasterPrefab);
             }
+
+            gameMaster = FindFirstObjectByType<GameMaster>();
             Cursor.visible = false;
             Cursor.lockState = CursorLockMode.Locked;
 
@@ -315,6 +321,50 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
         Player_Screen.SetActive(select);
     }
 
+    //ファイナルウィンドウ起動
+    public void FinalWindowOn()
+    {
+        final_window.SetActive(true);
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+    }
+
+    public void FinalWindowOff()
+    {
+        final_window.SetActive(false);
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+    }
+
+    public void FinalThunderOff()
+    {
+        FinalWindowOff();
+        gameMaster = FindFirstObjectByType<GameMaster>();
+        gameMaster.RPCisFinalThunderSelect(false);
+    }
+
+    public void FinalThunderOn()
+    {
+        FinalWindowOff();
+        gameMaster.RPCthunder();
+        ScreenValid = false;
+
+        GameBGM.Pause();
+        DokiDoki.Play();
+
+        Invoke("Lazyfinalthunder", 5f);
+    }
+
+    private void Lazyfinalthunder()
+    {
+        DokiDoki.Pause();
+
+        if (gameMaster.chair_match)
+        {
+            gameMaster.RPCthunderView();
+        }
+    }
+
     void Update()
     {
         //ゲーム中か判定し、HUDを有効
@@ -323,7 +373,8 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
             InElectSetHUD();
         }
 
-        if (!cutInPlayer.isPlaying)
+        if (gameMaster.IsUnityNull()) return;
+        if (!cutInPlayer.isPlaying && !gameMaster.Isthunder)
         {
             ScreenValid = true;
         }
